@@ -151,7 +151,7 @@ function DiagramInner() {
         id: ent.id,
         type: "entityNode",
         position: positions[ent.id] || { x: Math.random() * 800, y: Math.random() * 800 },
-        data: ent,
+        data: ent as any,
       });
     });
 
@@ -161,7 +161,7 @@ function DiagramInner() {
         id: rel.id,
         type: "relationshipNode",
         position: positions[rel.id] || { x: Math.random() * 800, y: Math.random() * 800 },
-        data: rel,
+        data: rel as any,
       });
     });
 
@@ -171,7 +171,7 @@ function DiagramInner() {
         id: h.id,
         type: "hierarchyNode",
         position: positions[h.id] || { x: Math.random() * 800, y: Math.random() * 800 },
-        data: h,
+        data: h as any,
       });
     });
 
