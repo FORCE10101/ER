@@ -15,6 +15,8 @@ export interface EntityData {
   id: string;
   name: string;
   type: "Entity" | "Weak Entity" | "Associative Entity";
+  tier: number;
+  tierLabel: string;
   description: string;
   attributes: Attribute[];
 }
@@ -56,30 +58,33 @@ export const pharmaSchema: SchemaData = {
   // ══════════════════════════════════════════════════════════════════════
 
   entities: [
-    // ── 1. Superclass ──────────────────────────────────────────────────
+    // ── Tier 1: Inheritance Root ─────────────────────────────────────────
     {
       id: "actor",
       name: "ACTOR",
       type: "Entity",
+      tier: 1,
+      tierLabel: "Inheritance Root",
       description:
-        "Superclass holding universal authentication and profile data. Every participant — manufacturer, pharmacy, or admin — inherits from this base entity, enabling unified login and role-based access control.",
+        "Superclass holding universal authentication and profile data. Every participant — manufacturer, pharmacy, admin, or customer — inherits from this base entity. Connects to SCAN_LOG via 'Scanned_By' relationship, enabling unified login and role-based access control.",
       attributes: [
         { name: "actor_id", type: "PK", dataType: "UUID" },
         { name: "username", type: "normal", dataType: "VARCHAR(50)" },
-        { name: "password_hash", type: "normal", dataType: "VARCHAR(255)" },
         { name: "email", type: "normal", dataType: "VARCHAR(150)" },
+        { name: "password_hash", type: "normal", dataType: "VARCHAR(255)" },
         { name: "role_type", type: "normal", dataType: "ENUM" },
-        { name: "registered_at", type: "normal", dataType: "TIMESTAMP" },
       ],
     },
 
-    // ── 2. Subclasses ──────────────────────────────────────────────────
+    // ── Tier 2: Subclasses (Disjoint Specialization from ACTOR) ──────────
     {
       id: "manufacturer",
       name: "MANUFACTURER",
       type: "Entity",
+      tier: 2,
+      tierLabel: "Subclasses",
       description:
-        "Specialized actor who mints new drug batches. Holds regulatory license and declared production capacity.",
+        "Specialized actor who mints new drug batches. Holds regulatory license and declared production capacity. Disjoint specialization from ACTOR.",
       attributes: [
         { name: "actor_id", type: "PK-FK", dataType: "UUID" },
         { name: "license_no", type: "normal", dataType: "VARCHAR(50)" },
@@ -90,8 +95,10 @@ export const pharmaSchema: SchemaData = {
       id: "pharmacy",
       name: "PHARMACY",
       type: "Entity",
+      tier: 2,
+      tierLabel: "Subclasses",
       description:
-        "Specialized actor who stocks inventory and executes consumer sales. Stores geolocation for proximity-based verification.",
+        "Specialized actor who stocks inventory and executes consumer sales. Stores geolocation for proximity-based verification. Disjoint specialization from ACTOR.",
       attributes: [
         { name: "actor_id", type: "PK-FK", dataType: "UUID" },
         { name: "pharmacy_license", type: "normal", dataType: "VARCHAR(50)" },
@@ -103,64 +110,82 @@ export const pharmaSchema: SchemaData = {
       id: "admin",
       name: "ADMIN",
       type: "Entity",
+      tier: 2,
+      tierLabel: "Subclasses",
       description:
-        "Specialized actor with global system permissions. Holds a numeric security clearance level dictating accessible operations.",
+        "Specialized actor with global system permissions. Holds a numeric security clearance level dictating accessible operations. Disjoint specialization from ACTOR.",
       attributes: [
         { name: "actor_id", type: "PK-FK", dataType: "UUID" },
         { name: "security_clearance_level", type: "normal", dataType: "INT" },
       ],
     },
+    {
+      id: "customer",
+      name: "CUSTOMER",
+      type: "Entity",
+      tier: 2,
+      tierLabel: "Subclasses",
+      description:
+        "B2C End-user. Disjoint specialization from ACTOR. Inherits 'Scanned_By' rights allowing QR code verification. ⚠️ SECURITY: Read-access is strictly limited to the 'vw_customer_journey' secure database view — no direct table access is permitted for this role.",
+      attributes: [
+        { name: "actor_id", type: "PK-FK", dataType: "UUID" },
+        { name: "phone_number", type: "normal", dataType: "VARCHAR(20)" },
+        { name: "device_id", type: "normal", dataType: "VARCHAR(255)" },
+      ],
+    },
 
-    // ── 3. Core Entities ───────────────────────────────────────────────
+    // ── Tier 3: Core ─────────────────────────────────────────────────────
     {
       id: "medicine",
       name: "MEDICINE",
       type: "Entity",
+      tier: 3,
+      tierLabel: "Core",
       description:
         "Blueprint/definition of a specific drug product. One MEDICINE can be manufactured in many BATCHes.",
       attributes: [
         { name: "medicine_id", type: "PK", dataType: "UUID" },
         { name: "generic_name", type: "normal", dataType: "VARCHAR(100)" },
         { name: "brand_name", type: "normal", dataType: "VARCHAR(100)" },
-        { name: "base_price", type: "normal", dataType: "DECIMAL" },
       ],
     },
     {
       id: "batch",
       name: "BATCH",
       type: "Entity",
+      tier: 3,
+      tierLabel: "Core",
       description:
         "A distinct physical production run, identified by SHA-256 QR hash. Tracks current owner via FK. Central entity for chain-of-custody, inventory, and security scanning.",
       attributes: [
         { name: "batch_id", type: "PK", dataType: "UUID" },
         { name: "medicine_id", type: "FK", dataType: "UUID" },
         { name: "qr_code_hash", type: "normal", dataType: "VARCHAR(255)" },
-        { name: "mfg_date", type: "normal", dataType: "DATE" },
-        { name: "expiry_date", type: "normal", dataType: "DATE" },
         { name: "current_owner_id", type: "FK", dataType: "UUID" },
       ],
     },
 
-    // ── 4. Associative Entity ──────────────────────────────────────────
+    // ── Tier 4: Action ───────────────────────────────────────────────────
     {
       id: "inventory",
       name: "INVENTORY",
       type: "Associative Entity",
+      tier: 4,
+      tierLabel: "Action",
       description:
         "Resolves the M:N relationship between PHARMACY and BATCH. Composite PK (pharmacy_id + batch_id). quantity_on_hand is decremented on sale.",
       attributes: [
         { name: "pharmacy_id", type: "PK-FK", dataType: "UUID" },
         { name: "batch_id", type: "PK-FK", dataType: "UUID" },
         { name: "quantity_on_hand", type: "normal", dataType: "INT" },
-        { name: "last_updated", type: "normal", dataType: "TIMESTAMP" },
       ],
     },
-
-    // ── 5. Action & Security Entities ──────────────────────────────────
     {
       id: "transfer_log",
       name: "TRANSFER_LOG",
       type: "Entity",
+      tier: 4,
+      tierLabel: "Action",
       description:
         "Logs all physical movements of a Batch between actors, building Chain of Custody. Primary data source for Recursive CTE chain-of-custody queries.",
       attributes: [
@@ -168,30 +193,30 @@ export const pharmaSchema: SchemaData = {
         { name: "batch_id", type: "FK", dataType: "UUID" },
         { name: "sender_id", type: "FK", dataType: "UUID" },
         { name: "receiver_id", type: "FK", dataType: "UUID" },
-        { name: "transfer_date", type: "normal", dataType: "TIMESTAMP" },
-        { name: "status", type: "normal", dataType: "VARCHAR(20)" },
       ],
     },
     {
       id: "sale_transaction",
       name: "SALE_TRANSACTION",
       type: "Entity",
+      tier: 4,
+      tierLabel: "Action",
       description:
-        "Records final consumer point-of-sale. Captures quantity, timestamp, treatment duration, and optional override reason for regulatory exempt sales.",
+        "Records final consumer point-of-sale. Captures pharmacy, batch, and transaction details for regulatory compliance.",
       attributes: [
         { name: "txn_id", type: "PK", dataType: "SERIAL" },
         { name: "pharmacy_id", type: "FK", dataType: "UUID" },
         { name: "batch_id", type: "FK", dataType: "UUID" },
-        { name: "quantity_sold", type: "normal", dataType: "INT" },
-        { name: "sale_timestamp", type: "normal", dataType: "TIMESTAMP" },
-        { name: "treatment_duration_days", type: "normal", dataType: "INT" },
-        { name: "override_reason", type: "normal", dataType: "TEXT" },
       ],
     },
+
+    // ── Tier 5: Security ────────────────────────────────────────────────
     {
       id: "scan_log",
       name: "SCAN_LOG",
       type: "Entity",
+      tier: 5,
+      tierLabel: "Security",
       description:
         "Logs every distinct QR scan event. Timestamp + GPS + scanner identity enable velocity-check calculations — detecting impossible travel via database triggers.",
       attributes: [
@@ -200,21 +225,21 @@ export const pharmaSchema: SchemaData = {
         { name: "scanned_by", type: "FK", dataType: "UUID" },
         { name: "gps_lat", type: "normal", dataType: "DECIMAL" },
         { name: "gps_long", type: "normal", dataType: "DECIMAL" },
-        { name: "scan_timestamp", type: "normal", dataType: "TIMESTAMP" },
       ],
     },
     {
       id: "alert",
       name: "ALERT",
       type: "Entity",
+      tier: 5,
+      tierLabel: "Security",
       description:
-        "Stores security violation records triggered by database-level triggers. Captures affected Batch, alert type (VELOCITY_BREACH, EXPIRY_OVERRIDE, DUPLICATE_SCAN…), severity, and timestamp.",
+        "Stores security violation records triggered by database-level triggers. Captures affected Batch, alert type (VELOCITY_BREACH, EXPIRY_OVERRIDE, DUPLICATE_SCAN…), and severity.",
       attributes: [
         { name: "alert_id", type: "PK", dataType: "SERIAL" },
         { name: "batch_id", type: "FK", dataType: "UUID" },
         { name: "alert_type", type: "normal", dataType: "VARCHAR(50)" },
         { name: "severity", type: "normal", dataType: "VARCHAR(10)" },
-        { name: "alert_timestamp", type: "normal", dataType: "TIMESTAMP" },
       ],
     },
   ],
@@ -248,7 +273,7 @@ export const pharmaSchema: SchemaData = {
       ],
     },
 
-    // ── Inventory Management (two 1:N from M:N resolution) ─────────────
+    // ── Inventory Management ──────────────────────────────────────────
     {
       id: "rel_manages",
       name: "Manages",
@@ -364,10 +389,10 @@ export const pharmaSchema: SchemaData = {
   hierarchies: [
     {
       id: "h_actor",
-      type: "disjoint",       // 'd' inside the circle
+      type: "disjoint",        // 'd' inside the circle
       superclassId: "actor",
-      subclassIds: ["manufacturer", "pharmacy", "admin"],
-      participation: "total", // double line from ACTOR to circle — every actor MUST be one subclass
+      subclassIds: ["manufacturer", "pharmacy", "admin", "customer"],
+      participation: "total",  // double line from ACTOR to circle — every actor MUST be one subclass
     },
   ],
 };

@@ -1,11 +1,11 @@
 "use client";
 
-import { BaseEdge, getStraightPath, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
 
 /**
  * ParticipationEdge
- * - Total participation  → two parallel lines (double line)
- * - Partial participation → one single line
+ * - Total participation  → two parallel lines (double line) — smooth step routing
+ * - Partial participation → one single line — smooth step routing
  *
  * Custom data props:
  *   data.participation: "total" | "partial"
@@ -17,6 +17,8 @@ export default function ParticipationEdge({
   sourceY,
   targetX,
   targetY,
+  sourcePosition,
+  targetPosition,
   data,
   label,
   labelStyle,
@@ -26,12 +28,15 @@ export default function ParticipationEdge({
   const isTotal = data?.participation === "total";
   const color = (data?.lineColor as string) || "#64748b";
 
-  // Compute straight path between source and target
-  const [edgePath, labelX, labelY] = getStraightPath({
+  // Use smooth step path for orthogonal routing
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
+    sourcePosition,
+    targetPosition,
+    borderRadius: 12,
   });
 
   if (!isTotal) {
@@ -47,13 +52,15 @@ export default function ParticipationEdge({
         {label && (
           <>
             <rect
-              x={labelX - 10}
-              y={labelY - 10}
-              width={20}
-              height={20}
-              rx={4}
+              x={labelX - 12}
+              y={labelY - 11}
+              width={24}
+              height={22}
+              rx={6}
               fill={labelBgStyle?.fill || "#f8fafc"}
-              fillOpacity={labelBgStyle?.fillOpacity || 0.9}
+              fillOpacity={labelBgStyle?.fillOpacity || 0.92}
+              stroke="#e2e8f0"
+              strokeWidth={0.5}
             />
             <text
               x={labelX}
@@ -61,8 +68,8 @@ export default function ParticipationEdge({
               textAnchor="middle"
               dominantBaseline="central"
               style={{
-                fontSize: 13,
-                fontWeight: 700,
+                fontSize: 12,
+                fontWeight: 800,
                 fill: labelStyle?.fill || "#475569",
                 ...(labelStyle as any),
               }}
@@ -76,18 +83,20 @@ export default function ParticipationEdge({
   }
 
   // ── Double line (total participation) ──
-  // We offset the path perpendicular to the line direction
+  // Offset the path perpendicular to the line direction
   const dx = targetX - sourceX;
   const dy = targetY - sourceY;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
-  // Perpendicular unit vector
   const px = -dy / len;
   const py = dx / len;
-  const gap = 3; // half-gap between the two lines
+  const gap = 3;
 
-  const path1 = "M " + (sourceX + px * gap) + " " + (sourceY + py * gap) +
+  // Two parallel straight-line paths for the double line effect
+  const path1 =
+    "M " + (sourceX + px * gap) + " " + (sourceY + py * gap) +
     " L " + (targetX + px * gap) + " " + (targetY + py * gap);
-  const path2 = "M " + (sourceX - px * gap) + " " + (sourceY - py * gap) +
+  const path2 =
+    "M " + (sourceX - px * gap) + " " + (sourceY - py * gap) +
     " L " + (targetX - px * gap) + " " + (targetY - py * gap);
 
   return (
@@ -107,13 +116,15 @@ export default function ParticipationEdge({
       {label && (
         <>
           <rect
-            x={labelX - 10}
-            y={labelY - 10}
-            width={20}
-            height={20}
-            rx={4}
+            x={labelX - 12}
+            y={labelY - 11}
+            width={24}
+            height={22}
+            rx={6}
             fill={labelBgStyle?.fill || "#f8fafc"}
-            fillOpacity={labelBgStyle?.fillOpacity || 0.9}
+            fillOpacity={labelBgStyle?.fillOpacity || 0.92}
+            stroke="#e2e8f0"
+            strokeWidth={0.5}
           />
           <text
             x={labelX}
@@ -121,8 +132,8 @@ export default function ParticipationEdge({
             textAnchor="middle"
             dominantBaseline="central"
             style={{
-              fontSize: 13,
-              fontWeight: 700,
+              fontSize: 12,
+              fontWeight: 800,
               fill: labelStyle?.fill || "#475569",
               ...(labelStyle as any),
             }}

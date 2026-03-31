@@ -7,32 +7,141 @@
   --foreground: #0f172a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-  }
-}
-
 body {
   color: var(--foreground);
   background: var(--background);
+  overflow: hidden;
 }
 
-/* React Flow customizations for tech theme */
-.react-flow__bg {
-  background-color: #f1f5f9;
+/* ── React Flow Theme ─────────────────────────────────────────── */
+.react-flow__background {
+  background-color: #f1f5f9 !important;
 }
+
+.react-flow__controls {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .react-flow__controls-button {
   background-color: #fff !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  margin-bottom: 4px !important;
   fill: #475569 !important;
-}
-.react-flow__controls-button:hover {
-  background-color: #f8fafc !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: all 0.2s ease !important;
 }
 
-/* Base custom node styles */
-.react-flow__node {
-  border-radius: 8px;
+.react-flow__controls-button:hover {
+  background-color: #eff6ff !important;
+  border-color: #93c5fd !important;
+  fill: #2563eb !important;
+}
+
+/* Hide default attribution */
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* ── Node Animations ──────────────────────────────────────────── */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.node-animate-in {
+  animation: fadeSlideIn 0.4s ease-out both;
+}
+
+.node-selected-glow {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* ── Tier Band Labels ─────────────────────────────────────────── */
+.tier-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 24px;
+}
+
+.tier-label span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background: rgba(241, 245, 249, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+/* ── Details Panel Scrollbar ──────────────────────────────────── */
+.details-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.details-scroll::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+.details-scroll::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 10px;
+}
+.details-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* ── Custom handle styling ────────────────────────────────────── */
+.react-flow__handle {
+  opacity: 0 !important;
+  transition: opacity 0.2s !important;
+}
+.react-flow__node:hover .react-flow__handle {
+  opacity: 1 !important;
+}
+
+/* ── Accordion ────────────────────────────────────────────────── */
+@keyframes accordionOpen {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+.accordion-content {
+  animation: accordionOpen 0.3s ease-out forwards;
+  overflow: hidden;
 }
