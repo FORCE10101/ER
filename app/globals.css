@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* React Flow customizations for tech theme */
+.react-flow__bg {
+  background-color: #f1f5f9;
+}
+.react-flow__controls-button {
+  background-color: #fff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  fill: #475569 !important;
+}
+.react-flow__controls-button:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Base custom node styles */
+.react-flow__node {
+  border-radius: 8px;
+}
